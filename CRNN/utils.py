@@ -1,3 +1,4 @@
+import os
 from collections import defaultdict
 
 import torch
@@ -26,11 +27,29 @@ def decode_char(charset, encoded_text):
     char_list = [charset[i] for i in encoded_text]
     return char_list
     
-def get_charset(path='charset.txt'):
-    with open(path) as f:
-        charset = f.read()
+def get_charset(path=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'charset.txt')):
+    with open(path, encoding='utf-8') as f:
+        charset = f.read().rstrip('\n')
     
     return charset
+
+
+def edit_distance(a, b):
+    # Levenshtein distance: substitutions + deletions + insertions
+    prev = list(range(len(b) + 1))
+    for i, ca in enumerate(a, 1):
+        cur = [i]
+        for j, cb in enumerate(b, 1):
+            cur.append(min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (ca != cb)))
+        prev = cur
+    return prev[-1]
+
+
+def cer(preds, refs):
+    # Character Error Rate = (S + D + I) / N over the whole set
+    total_chars = sum(len(r) for r in refs)
+    total_edits = sum(edit_distance(p, r) for p, r in zip(preds, refs))
+    return total_edits / max(total_chars, 1)
 
 DEFAULT_EMISSION_THRESHOLD = 0.01
 NINF = -1 * float('inf')
@@ -46,6 +65,10 @@ def _reconstruct(labels, blank=0):
     new_labels = [l for l in new_labels if l != blank]
 
     return new_labels
+
+def greedy_decode(emission_log_prob, blank=0, **kwargs):
+    labels = np.argmax(emission_log_prob, axis=-1)
+    return _reconstruct(labels, blank)
 
 def beam_search_decode(emission_log_prob, blank=0, **kwargs):
     beam_size = kwargs['beam_size']
@@ -91,7 +114,7 @@ def ctc_decode(log_probs, charset, decode_char=None, blank=0, method='beam_searc
     # size of emission_log_probs: (batch, length, class)
 
     decoders = {
-        # 'greedy': greedy_decode,
+        'greedy': greedy_decode,
         'beam_search': beam_search_decode,
         # 'prefix_beam_search': prefix_beam_decode,
     }

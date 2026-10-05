@@ -20,17 +20,14 @@ class ImageDataset(data.Dataset):
         if not self.is_test:
             self.target_transform = target_transform
             self.gt_dict = {}
-            with open(gt_path) as f:
-                for line in f:
-                    file_name, label = line.split()
-                    self.gt_dict[file_name] = label
+            self.gt_dict = read_gt(gt_path)
 
     def __len__(self):
         return len(self.img_names)
 
     def __getitem__(self, idx):
         img_path = os.path.join(self.img_dir, self.img_names[idx])
-        img = Image.open(img_path)
+        img = Image.open(img_path).convert("RGB")
         if self.transform:
             img = self.transform(img)
 
@@ -42,6 +39,17 @@ class ImageDataset(data.Dataset):
                 label, label_len = self.target_transform(label)
 
             return img, label, label_len
+
+
+def read_gt(gt_path):
+    # each line: IMAGE_NAME<TAB or space>TEXT
+    gt_dict = {}
+    with open(gt_path, encoding="utf-8") as f:
+        for line in f:
+            parts = line.rstrip("\n").split(maxsplit=1)
+            if len(parts) == 2:
+                gt_dict[parts[0]] = parts[1]
+    return gt_dict
 
 
 mean = [0.485, 0.456, 0.406]

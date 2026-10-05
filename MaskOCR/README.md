@@ -22,12 +22,12 @@ All pipelines have the same pre-steps as running these cells:
 
 ## Encoder pretraining pipeline
 
-Run **Pretraining pipeline for encoder** and **Train** cells in **MaskOCR Encoder** cell to start encoder pretraining phase.
+Run **Pretraining pipeline for encoder** and **Train** cells in **MaskOCR Encoder** cell to start encoder pretraining phase. The best epoch is saved as `EncoderModel_<timestamp>_<epoch>.pth`.
 
 ## Decoder pretraining pipeline
 
-Run **Pretraining pipeline for decoder** and **Train** cells in **MaskOCR Decoder** cell to start decoder pretraining phase.
+Set `pretrain_encoder_path` to the encoder checkpoint, then run **Pretraining pipeline for decoder** and **Train** cells in **MaskOCR Decoder** cell to start decoder pretraining phase. The encoder is frozen in this phase; the best epoch is saved as `DecoderModel_<timestamp>_<epoch>.pth`.
 
 ## Main MaskOCR training pipeline
 
-Run **Training pipeline for MaskOCR** and **Train** cells in **Train MaskOCR** cell to start decoder pretraining phase.
+Set `pretrain_model_path` to the decoder checkpoint (or only `pretrain_encoder_path` to skip decoder pretraining), then run **Training pipeline for MaskOCR** and **Train** cells in **Train MaskOCR** cell to start the main training phase. Encoder and decoder are trained together; validation CER is printed every epoch, the best epoch is saved as `MaskOCR_<timestamp>_<epoch>.pth`, and its CER on the held-out test split is printed at the end.

@@ -1,18 +1,20 @@
 # Vietnamese Handwriting Recognition (OCR)
 
-Machine Learning course project (Group 15, VNU-UET) — recognising Vietnamese handwritten words with Transformer-based encoder–decoder models.
+Machine Learning course project (Group 15, VNU-UET): recognising handwritten Vietnamese words with a CRNN baseline and two Transformer-based encoder–decoder models (TrOCR and MaskOCR).
 
 **Authors:** Nguyễn Huyền Trang (20020727), Lê Thị Trang (20020726), Nguyễn Thành Quốc (20020707)
 
-Full write-up: [`Reports/ML_FinalReport_15.pdf`](Reports/ML_FinalReport_15.pdf) · Slides: [`Reports/ML_Presentation_15.pdf`](Reports/ML_Presentation_15.pdf) · Demo video: [`Reports/demoOCR.mp4`](Reports/demoOCR.mp4)
+📄 [Final report](Reports/ML_FinalReport_15.pdf) · 📊 [Slides](Reports/ML_Presentation_15.pdf) · 🎬 [Demo video](Reports/demoOCR.mp4)
+
+![Demo: uploading a handwritten "Trang" and getting the prediction](assets/demo.gif)
 
 ## Task
 
-- **Input:** an image containing a single handwritten Vietnamese word.
+- **Input:** an image of a single handwritten Vietnamese word.
 - **Output:** the recognised text.
-- **Approach:** image → **encoder** (feature map) → **decoder** (character sequence).
+- **Approach:** image → **encoder** (visual features) → **decoder** (character sequence).
 
-Vietnamese is hard for OCR: 29 letters (10 carrying tone marks), many syllables and diacritics, individual handwriting styles, and low-quality photos.
+Vietnamese is hard for OCR: 29 letters (10 with tone marks), stacked diacritics, varied handwriting styles and low-quality photos.
 
 ## Dataset
 
@@ -23,94 +25,124 @@ Vietnamese is hard for OCR: 29 letters (10 carrying tone marks), many syllables 
 | Training | 103,000 | 51k form + 48k wild + 4k GAN, labelled |
 | Public test | 33,000 | 17k form + 16k wild, unlabelled |
 
-Labels are `.txt` files, one line per image: `IMAGE_NAME<TAB>GROUND_TRUTH_TEXT`.
-Image sizes: height 11–378 px (mean 72), width 0–543 px (mean 131). Most words are 3–4 characters long.
+Labels are in `train_gt.txt`, one line per image: `IMAGE_NAME<TAB>TEXT`. Image heights range from 11 to 378 px (mean 72) and widths up to 543 px (mean 131). Most words are 3–4 characters long.
+
+## Results
+
+Metric: **Character Error Rate**, `CER = (S + D + I) / N`: substitutions, deletions and insertions divided by the number of reference characters. Lower is better.
+
+| Model | CER | Accuracy ≈ 1 − CER |
+|---|---|---|
+| **CRNN** | **0.0899** | **~91%** |
+| TrOCR (fine-tuned) | 0.1164 | ~89% |
+| MaskOCR | 0.1378 | ~86% |
+
+CRNN has the lowest error and is the only model in the "average OCR quality" band (CER 2–10%). TrOCR and MaskOCR are both above 10%. The report attributes this to limited compute: the Transformer models had not fully converged.
+
+**Limitations noted in the report:**
+- Small training images make the models sensitive to small input changes.
+- Blurry, noisy or poorly lit images are handled poorly.
+- Training the Transformer models fully needed more GPU time than was available.
+
+> **Note:** these numbers come from the original project runs. The code has since been fixed (see [Changes since the report](#changes-since-the-report)) and the models have not been retrained, so rerunning will give different numbers. All three pipelines now print CER themselves.
 
 ## Repository layout
 
 ```
 .
-├── CRNN/                    # CNN + BiLSTM + CTC baseline (scripts)
-├── TrOCR/                   # Fine-tuned microsoft/trocr-base-handwritten (Kaggle notebooks)
-├── MaskOCR/                 # MaskOCR re-implementation (Colab notebook)
-├── assets/demo.gif          # Short demo GIF
-└── Reports/                 # Final report, presentation (PDF), demo video
+├── CRNN/              # CNN + BiLSTM + CTC baseline (Python scripts)
+├── TrOCR/             # Fine-tuned microsoft/trocr-base-handwritten (Kaggle notebooks)
+├── MaskOCR/           # MaskOCR re-implementation (Colab notebook)
+├── assets/demo.gif    # Demo GIF
+└── Reports/           # Final report, slides (PDF) and demo video
 ```
 
-## Results
+## How to run
 
-Metric: **Character Error Rate** — `CER = (S + D + I) / N` (substitutions, deletions, insertions over reference length; lower is better). Only character-level error is reported because each sample is a single word.
+The code targets GPU notebooks (Kaggle / Colab) or a GPU server and uses **fixed dataset paths** (`/kaggle/...`, `/content/...`, `Datasets/...`). Point them at your copy of the dataset before running.
 
-| Model | CER | Accuracy ≈ 1 − CER |
-|---|---|---|
-| TrOCR (fine-tuned) | 0.1164 | ~89% |
-| CRNN | 0.0899 | ~91% |
-| MaskOCR | 0.1378 | ~86% |
+### 1. CRNN — `CRNN/`
 
-**CRNN** gives the lowest error (CER 0.0899), the only model in the "average OCR quality" band (CER 2–10%). The two Transformer models come out worse: TrOCR at 0.1164 and MaskOCR at 0.1378, both above 10%. This fits the report's finding that the Transformer models had not fully converged with the compute available. TrOCR was evaluated with a 95:5 train/validation split (97,850 / 5,150 images).
-
-**Limitations noted in the report:**
-- Small training images make the models sensitive to small input changes.
-- Blurry, noisy or poorly lit images are handled poorly.
-- Limited compute meant the Transformer models had not fully converged.
-
-## How to run each model
-
-> All scripts contain **hard-coded paths** from the authors' machines (`/kaggle/...`, `/content/...`, `Datasets/...`). Edit them to point to your local dataset and checkpoints before running.
-
-### 1. MaskOCR — `MaskOCR/`
-
-Unofficial implementation of [MaskOCR: Text Recognition with Masked Encoder-Decoder Pretraining](https://arxiv.org/abs/2206.00311). ViT encoder + DETR-style decoder with character queries.
-
-Open `MaskOCR_handwriting_recognition.ipynb` in Google Colab (GPU) and run the shared setup cells first: *Install dependencies → Data collection (IAM + Vietnamese) → Data loader helpers → Base structures*. Then run the three phases in order:
-
-1. **Encoder pretraining** — run *Pretraining pipeline for encoder* + *Train* under **MaskOCR Encoder**. Self-supervised: random vertical patches are masked and the encoder learns to predict their features and pixels (lr 1.5e-4, batch 80, 5 epochs).
-2. **Decoder pretraining** — run *Pretraining pipeline for decoder* + *Train* under **MaskOCR Decoder**. Encoder is frozen; characters/patches are masked so the decoder learns a language model (batch 256, 5 epochs). Set `pretrain_encoder_path` to the step 1 output.
-3. **Main training** — run *Training pipeline for MaskOCR* + *Train* under **Train MaskOCR** (20 epochs). Set `pretrain_encoder_path` and `pretrain_model_path` to the outputs of steps 1 and 2.
-
-Checkpoints are saved under `saved_models/`; losses are logged to TensorBoard.
-
-### 2. TrOCR — `TrOCR/`
-
-Fine-tunes [`microsoft/trocr-base-handwritten`](https://huggingface.co/microsoft/trocr-base-handwritten) (ViT/BEiT encoder + RoBERTa decoder) with Hugging Face `VisionEncoderDecoderModel`.
-
-- **Checkpoint:** <https://www.kaggle.com/datasets/loinh1106/ckpt4000>
-- **Dependencies:** `pip install "transformers[torch]" accelerate datasets jiwer gdown`
-
-**Train:** run `train_trocr.ipynb` on Kaggle. It downloads `train_gt.txt` with `gdown`, builds the dataset from `new_train/` (`max_target_length=128`, generation `max_length=64`, batch 8, save every 1000 steps) and reports CER on the validation split.
-
-**Test:** run `test_ocr.ipynb`. It loads the checkpoint (`/kaggle/input/ckpt4000/ckpt-4000`), predicts on `new_public_test/` and writes `out.csv`.
-
-### 3. CRNN — `CRNN/`
-
-Baseline [CRNN](https://arxiv.org/abs/1507.05717) (CNN + BiLSTM, CTC loss, Adadelta), based on [crnn-pytorch](https://github.com/GitYCC/crnn-pytorch). Character set: `charset.txt`.
+[CRNN](https://arxiv.org/abs/1507.05717) (7-layer CNN → 2× BiLSTM → CTC loss, Adadelta), based on [crnn-pytorch](https://github.com/GitYCC/crnn-pytorch). Characters are listed in `charset.txt`; images are resized to 32×128.
 
 ```bash
 cd CRNN
-pip install -r requirements.txt   # contains conflicting torchvision pins; keep one matching your torch/CUDA
+pip install -r requirements.txt
 ```
 
-**Train:** set `img_dir` and `gt_path` in `train.py` (input 64×128, batch 256, 100 epochs; checkpoints in `checkpoints/<exp_name>/`), then:
+**Train.** Set `img_dir` and `gt_path` in `train.py`, then run:
+
 ```bash
-python train.py
+python train.py      # batch 256, 100 epochs → checkpoints/crnn_32_128/
 ```
 
-**Predict:** set `img_dir`, `exp_name` and the image size in `predict.py`, then:
+Images without a label, or whose label has characters missing from `charset.txt`, are skipped. Validation loss and **CER** are printed after every epoch and logged to TensorBoard.
+
+**Predict.** Set `img_dir` (and `exp_name` if you changed it) in `predict.py`, then run:
+
 ```bash
-python predict.py   # → result/prediction.txt
+python predict.py    # → result/prediction.txt  (one "<image><TAB><text>" per line)
 ```
-Note: `train.py` trains at 64×128 (`crnn_64_128`), while `predict.py` loads `crnn_32_256` at 32×256. Make the size and experiment name match the checkpoint you use.
 
-## Demo
+To score a labelled folder, set `gt_path` in `predict.py` to its label file and the CER is printed. No trained CRNN weights are published, so train first.
 
-![Demo: uploading a handwritten "Trang" and getting the prediction](assets/demo.gif)
+### 2. TrOCR — `TrOCR/`
 
-Full demo video (both models, several test images): [`Reports/demoOCR.mp4`](Reports/demoOCR.mp4)
+Fine-tunes [`microsoft/trocr-base-handwritten`](https://huggingface.co/microsoft/trocr-base-handwritten) (ViT encoder + RoBERTa decoder) with Hugging Face `VisionEncoderDecoderModel`.
+
+- **Checkpoint (4,000 steps):** <https://www.kaggle.com/datasets/loinh1106/ckpt4000>
+
+**Train (`train_trocr.ipynb`).** Add the training images as a Kaggle input and run all cells. It downloads `train_gt.txt`, holds out 5% for validation (97,850 / 5,150 images), fine-tunes with batch 8 and fp16, and reports validation CER every 200 steps. It starts from `microsoft/trocr-base-handwritten`; point `from_pretrained` at a checkpoint folder instead to continue training.
+
+**Predict (`test_ocr.ipynb`).** Add the checkpoint and the public test images as Kaggle inputs and run all cells. It writes `out.csv` with `file_name,text` for every test image.
+
+### 3. MaskOCR — `MaskOCR/`
+
+Unofficial implementation of [MaskOCR: Text Recognition with Masked Encoder-Decoder Pretraining](https://arxiv.org/abs/2206.00311): a ViT encoder plus a Transformer decoder with learned character queries. By default it trains on IAM (English) and the Vietnamese set together; set `'name': ['vi']` in the config cells to use Vietnamese only.
+
+Open `MaskOCR_handwriting_recognition.ipynb` in Colab with a GPU. Run the setup cells first (*Install dependencies → Data collections → Data loader helpers → Base structures*), then the three stages in order:
+
+| Stage | Cells | What it does | Output |
+|---|---|---|---|
+| 1. Encoder pretraining | *MaskOCR Encoder → Training* | Masks image patches; the encoder learns to predict them (self-supervised) | `EncoderModel_<time>_<epoch>.pth` |
+| 2. Decoder pretraining | *MaskOCR Decoder → Training*, with `pretrain_encoder_path` = stage 1 file | Encoder frozen; masked characters train the decoder as a language model | `DecoderModel_<time>_<epoch>.pth` |
+| 3. Main training | *Train MaskOCR → Training*, with `pretrain_model_path` = stage 2 file | Trains encoder and decoder together; prints validation CER each epoch and test CER at the end | `MaskOCR_<time>_<epoch>.pth` |
+
+Losses and CER are logged to TensorBoard under `runs/`.
+
+## Changes since the report
+
+The code was cleaned up after the project so that every pipeline runs from start to finish. Each one was run end to end on a small synthetic dataset (CPU) to check this; none were retrained on the real data.
+
+**CRNN**
+- `requirements.txt` now installs (it had conflicting `torchvision` pins, an `opencv` build with no wheels for current Python, and was missing `tensorboard`).
+- Training no longer leaks memory (`total_loss += loss` kept every batch's autograd graph; now `loss.item()`).
+- Images are converted to RGB, so greyscale or transparent images no longer break normalisation.
+- Train and predict use the same 32×128 input size and checkpoint folder; unlabelled or unsupported-character images are skipped.
+- Validation CER (train) and optional CER from labels (predict) added.
+
+**TrOCR**
+- Works with current `transformers`: `eval_strategy`, `processing_class`, and generation settings on `generation_config`. CER uses `jiwer` instead of the removed `datasets.load_metric`.
+- Training starts from the public `microsoft/trocr-base-handwritten` model instead of an unpublished 2,000-step checkpoint, and no longer stops on a wandb login prompt.
+- `out.csv` holds plain text instead of one-item lists.
+
+**MaskOCR**
+- Main training crashed on the first batch: it unpacked 4 values from a dataset returning 5, called an undefined `best_path_decode`, and failed to build labels (`np.all(None) != None`). Validation also called the loss without a required argument.
+- The pretrained encoder and decoder checkpoints were configured but never loaded, and the encoder was always frozen. Main training now loads them and trains the encoder.
+- The loss and the decoder's character queries reordered tensors with `reshape` instead of `permute`, which paired predictions with the wrong labels and positions.
+- Encoder pretraining ignored the configured model size, so its checkpoint did not fit the MaskOCR encoder. It now uses the configured size.
+- Vietnamese labels kept a trailing newline, which became part of every word.
+- Removed the horizontal-flip augmentation (it mirrors text) and the unused CTCDecoder and plotting dependencies.
+- Added CER on the validation split each epoch and on the test split at the end.
+
+**Still to know**
+- No trained CRNN or MaskOCR weights are published.
+- If decoder pretraining saw a different character set than main training, the decoder's output layer starts fresh; the notebook prints which weights were not loaded.
 
 ## References
 
-- Vaswani et al., *Attention Is All You Need*, 2017
+- Vaswani et al., *Attention Is All You Need*, NeurIPS 2017
+- Shi et al., *An End-to-End Trainable Neural Network for Image-based Sequence Recognition*, TPAMI 2017
 - Li et al., *TrOCR: Transformer-based Optical Character Recognition with Pre-trained Models*, AAAI 2023
 - Lyu et al., *MaskOCR: Text Recognition with Masked Encoder-Decoder Pretraining*, arXiv:2206.00311
-- Bao et al., *BEiT: BERT Pre-Training of Image Transformers*, 2021
-- Shi et al., *An End-to-End Trainable Neural Network for Image-based Sequence Recognition*, 2015
+- Bao et al., *BEiT: BERT Pre-Training of Image Transformers*, ICLR 2022
