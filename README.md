@@ -33,7 +33,7 @@ Image sizes: height 11–378 px (mean 72), width 0–543 px (mean 131). Most wor
 ├── CRNN/                    # CNN + BiLSTM + CTC baseline (scripts)
 ├── TrOCR/                   # Fine-tuned microsoft/trocr-base-handwritten (Kaggle notebooks)
 ├── MaskOCR/                 # MaskOCR re-implementation (Colab notebook)
-├── demo.py                  # Streamlit web demo
+├── demo.py                  # Streamlit app shown in the demo (needs the removed Handwritten_OCR code)
 ├── assets/demo.gif          # Short demo GIF
 └── Reports/                 # Final report, presentation (PDF), demo video
 ```
@@ -48,7 +48,7 @@ Metric: **Character Error Rate** — `CER = (S + D + I) / N` (substitutions, del
 | CRNN | 0.0899 | ~91% |
 | MaskOCR | 0.1378 | ~86% |
 
-Both reported models fall in the "average OCR quality" band (CER 2–10%). MaskOCR, with masked encoder–decoder pretraining, beats plain TrOCR fine-tuning by ~3.7 CER points. TrOCR was evaluated with a 95:5 train/validation split (97,850 / 5,150 images).
+**CRNN** gives the lowest error (CER 0.0899), the only model in the "average OCR quality" band (CER 2–10%). The two Transformer models come out worse: TrOCR at 0.1164 and MaskOCR at 0.1378, both above 10%. This fits the report's finding that the Transformer models had not fully converged with the compute available. TrOCR was evaluated with a 95:5 train/validation split (97,850 / 5,150 images).
 
 **Limitations noted in the report:**
 - Small training images make the models sensitive to small input changes.
@@ -102,20 +102,11 @@ python predict.py   # → result/prediction.txt
 ```
 Note: `train.py` trains at 64×128 (`crnn_64_128`), while `predict.py` loads `crnn_32_256` at 32×256. Make the size and experiment name match the checkpoint you use.
 
-## Web demo
-
-`demo.py` is a Streamlit app: upload a JPG/PNG and it shows the predicted text. It uses the Handwritten_OCR (VGG-Transformer) model.
+## Demo
 
 ![Demo: uploading a handwritten "Trang" and getting the prediction](assets/demo.gif)
 
 Full demo video (both models, several test images): [`Reports/demoOCR.mp4`](Reports/demoOCR.mp4)
-
-```bash
-pip install streamlit
-# set config['weights'] in demo.py to your downloaded checkpoint
-PYTHONPATH=Handwritten_OCR-main streamlit run demo.py
-```
-(`PYTHONPATH` is needed so that `tool.predictor` / `tool.config` can be imported.)
 
 ## References
 
