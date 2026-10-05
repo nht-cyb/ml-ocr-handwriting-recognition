@@ -4,7 +4,7 @@ Machine Learning course project (Group 15, VNU-UET) — recognising Vietnamese h
 
 **Authors:** Nguyễn Huyền Trang (20020727), Lê Thị Trang (20020726), Nguyễn Thành Quốc (20020707)
 
-Full write-up: [`Reports/ML_FinalReport_15.pdf`](Reports/ML_FinalReport_15.pdf) · Slides: [`Reports/ML_Presentation_15.pdf`](Reports/ML_Presentation_15.pdf)
+Full write-up: [`Reports/ML_FinalReport_15.pdf`](Reports/ML_FinalReport_15.pdf) · Slides: [`Reports/ML_Presentation_15.pdf`](Reports/ML_Presentation_15.pdf) · Demo video: [`Reports/demoOCR.mp4`](Reports/demoOCR.mp4)
 
 ## Task
 
@@ -34,7 +34,8 @@ Image sizes: height 11–378 px (mean 72), width 0–543 px (mean 131). Most wor
 ├── TrOCR/                   # Fine-tuned microsoft/trocr-base-handwritten (Kaggle notebooks)
 ├── MaskOCR/                 # MaskOCR re-implementation (Colab notebook)
 ├── demo.py                  # Streamlit web demo
-└── Reports/                 # Final report + presentation (PDF)
+├── assets/demo.gif          # Short demo GIF
+└── Reports/                 # Final report, presentation (PDF), demo video
 ```
 
 ## Results
@@ -104,6 +105,10 @@ Note: `train.py` trains at 64×128 (`crnn_64_128`), while `predict.py` loads `cr
 ## Web demo
 
 `demo.py` is a Streamlit app: upload a JPG/PNG and it shows the predicted text. It uses the Handwritten_OCR (VGG-Transformer) model.
+
+![Demo: uploading a handwritten "Trang" and getting the prediction](assets/demo.gif)
+
+Full demo video (both models, several test images): [`Reports/demoOCR.mp4`](Reports/demoOCR.mp4)
 
 ```bash
 pip install streamlit
