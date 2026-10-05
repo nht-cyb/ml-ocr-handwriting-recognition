@@ -44,10 +44,10 @@ Metric: **Character Error Rate** — `CER = (S + D + I) / N` (substitutions, del
 
 | Model | CER | Accuracy ≈ 1 − CER |
 |---|---|---|
-| TrOCR (fine-tuned) | 0.0899 | ~91% |
+| TrOCR (fine-tuned) | 0.1164 | ~89% |
 | **MaskOCR** | **0.0527** | **~95%** |
-| CRNN | not reported | — |
-| Handwritten_OCR (VGG-Transformer) | not reported | — |
+| CRNN | 0.0899 | ~91% |
+| Handwritten_OCR (VGG-Transformer) | 0.1378 | ~86% |
 
 Both reported models fall in the "average OCR quality" band (CER 2–10%). MaskOCR, with masked encoder–decoder pretraining, beats plain TrOCR fine-tuning by ~3.7 CER points. TrOCR was evaluated with a 95:5 train/validation split (97,850 / 5,150 images).
 
