@@ -33,7 +33,6 @@ Image sizes: height 11–378 px (mean 72), width 0–543 px (mean 131). Most wor
 ├── CRNN/                    # CNN + BiLSTM + CTC baseline (scripts)
 ├── TrOCR/                   # Fine-tuned microsoft/trocr-base-handwritten (Kaggle notebooks)
 ├── MaskOCR/                 # MaskOCR re-implementation (Colab notebook)
-├── demo.py                  # Streamlit app shown in the demo (needs the removed Handwritten_OCR code)
 ├── assets/demo.gif          # Short demo GIF
 └── Reports/                 # Final report, presentation (PDF), demo video
 ```
@@ -57,7 +56,7 @@ Metric: **Character Error Rate** — `CER = (S + D + I) / N` (substitutions, del
 
 ## How to run each model
 
-> All scripts contain **hard-coded paths** from the authors' machines (`/kaggle/...`, `/content/...`, `/home/tienvh/...`, `D:\...`). Edit them to point to your local dataset and checkpoints before running.
+> All scripts contain **hard-coded paths** from the authors' machines (`/kaggle/...`, `/content/...`, `Datasets/...`). Edit them to point to your local dataset and checkpoints before running.
 
 ### 1. MaskOCR — `MaskOCR/`
 
