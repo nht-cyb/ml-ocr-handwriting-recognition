@@ -135,9 +135,6 @@ The code was cleaned up after the project so that every pipeline runs from start
 - Removed the horizontal-flip augmentation (it mirrors text) and the unused CTCDecoder and plotting dependencies.
 - Added CER on the validation split each epoch and on the test split at the end.
 
-**Still to know**
-- No trained CRNN or MaskOCR weights are published.
-- If decoder pretraining saw a different character set than main training, the decoder's output layer starts fresh; the notebook prints which weights were not loaded.
 
 ## References
 
