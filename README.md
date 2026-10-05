@@ -31,7 +31,6 @@ Image sizes: height 11–378 px (mean 72), width 0–543 px (mean 131). Most wor
 ```
 .
 ├── CRNN/                    # CNN + BiLSTM + CTC baseline (scripts)
-├── Handwritten_OCR-main/    # VietOCR-style CNN + Transformer (scripts, configs)
 ├── TrOCR/                   # Fine-tuned microsoft/trocr-base-handwritten (Kaggle notebooks)
 ├── MaskOCR/                 # MaskOCR re-implementation (Colab notebook)
 ├── demo.py                  # Streamlit web demo
@@ -45,7 +44,6 @@ Metric: **Character Error Rate** — `CER = (S + D + I) / N` (substitutions, del
 | Model | CER | Accuracy ≈ 1 − CER |
 |---|---|---|
 | TrOCR (fine-tuned) | 0.1164 | ~89% |
-| **VGG-Transformer ** | **0.0527** | **~95%** |
 | CRNN | 0.0899 | ~91% |
 | MaskOCR | 0.1378 | ~86% |
 
@@ -83,30 +81,7 @@ Fine-tunes [`microsoft/trocr-base-handwritten`](https://huggingface.co/microsoft
 
 **Test:** run `test_ocr.ipynb`. It loads the checkpoint (`/kaggle/input/ckpt4000/ckpt-4000`), predicts on `new_public_test/` and writes `out.csv`.
 
-### 3. Handwritten_OCR (VietOCR-based) — `Handwritten_OCR-main/`
-
-CNN backbone (VGG / ResNet) + Transformer or Seq2Seq decoder, adapted from [VietOCR](https://github.com/pbcquoc/vietocr). Configs are in `config/` (`vgg-transformer`, `resnet-transformer`, `resnet_fpn_transformer`, `vgg-seq2seq`, `vgg-convseq2seq`).
-
-- **Weights:** <https://drive.google.com/file/d/1CkDeDq3s9fjL4sV-hSRlHjupnW1EXl8o/view?usp=drive_link>
-
-```bash
-conda create -n vietocr python=3.10 && conda activate vietocr
-cd Handwritten_OCR-main
-pip install -r requirements.txt   # large, Windows-specific pins — installing torch, albumentations, einops, PyYAML, gdown, etc. manually may be easier
-```
-
-**Train:** edit `data_root`, `train_annotation`, `valid_annotation` and `export` in `train.py` (uses `vgg_transformer`, 20,000 iterations), then:
-```bash
-python train.py
-```
-
-**Predict:** edit `config['weights']` and `test_path` in `predict.py`, then:
-```bash
-python predict.py
-```
-This writes `<image_name> <prediction>` lines to a text file. A sample output is in `checkpoint/predict3.txt`.
-
-### 4. CRNN — `CRNN/`
+### 3. CRNN — `CRNN/`
 
 Baseline [CRNN](https://arxiv.org/abs/1507.05717) (CNN + BiLSTM, CTC loss, Adadelta), based on [crnn-pytorch](https://github.com/GitYCC/crnn-pytorch). Character set: `charset.txt`.
 
